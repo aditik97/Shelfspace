@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShelfSpace</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5EFE6;
+    --card: #FFFDF9;
+    --sidebar: #EFE3D3;
+    --text: #3A2E27;
+    --muted: #8A7E70;
+    --accent: #C1694F;
+    --border: #D9CFC0;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text); background: var(--bg); }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* --- Sidebar --- */
+  .sidebar {
+    width: 220px;
+    background: var(--sidebar);
+    padding: 22px 16px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 19px; margin-bottom: 22px; }
+  .nav-section { margin-bottom: 6px; }
+  .nav-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px; border-radius: 8px; font-size: 13px; color: var(--text);
+    cursor: pointer; margin-bottom: 3px;
+  }
+  .nav-item:hover { background: rgba(0,0,0,0.04); }
+  .nav-item.active { background: var(--accent); color: var(--card); }
+  .nav-item .count { font-size: 11px; opacity: 0.7; }
+  .add-shelf-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px; border-radius: 8px; font-size: 12px;
+    color: var(--accent); border: 1px dashed var(--accent);
+    cursor: pointer; margin-top: 4px; margin-bottom: 14px; background: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .divider { height: 1px; background: var(--border); margin: 10px 0; }
+  .sidebar-footer { margin-top: auto; display: flex; align-items: center; gap: 8px; padding-top: 10px; }
+  .sidebar-footer img { width: 26px; height: 26px; border-radius: 50%; }
+  .sidebar-footer .name { font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logout-icon { cursor: pointer; color: var(--muted); font-size: 12px; background: none; border: none; }
+
+  /* --- Main area --- */
+  .main { flex: 1; padding: 24px 32px; overflow-y: auto; }
+  .main-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
+  }
+  .main-title { font-family: 'Playfair Display', serif; font-size: 22px; }
+  .main-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .add-entry-btn {
+    background: var(--accent); color: var(--card); border: none;
+    padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .search-bar {
+    width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card); font-size: 13px; margin-bottom: 20px; font-family: 'Inter', sans-serif;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; }
+  .card { cursor: pointer; }
+  .card-cover {
+    aspect-ratio: 2/3; background: var(--border); border-radius: 8px; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    background-size: cover; background-position: center;
+  }
+  .card-cover .placeholder-icon { font-size: 26px; color: var(--accent); }
+  .card-title { font-size: 12px; font-weight: 500; }
+  .card-author { font-size: 11px; color: var(--muted); }
+
+  .empty-state {
+    text-align: center; color: var(--muted); padding: 60px 20px; font-size: 13px;
+  }
+
+  /* --- Modal (Add Entry) --- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(58,46,39,0.35);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg); border-radius: 16px; padding: 26px; max-width: 480px; width: 100%;
+    max-height: 88vh; overflow-y: auto;
+  }
+  .modal h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 20px; margin: 0 0 18px; }
+  .field-label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .field-input, .field-select, .field-textarea {
+    width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text); font-size: 13px; margin-bottom: 14px;
+    font-family: 'Inter', sans-serif; box-sizing: border-box;
+  }
+  .field-textarea { resize: vertical; min-height: 60px; }
+  .type-toggle { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .type-pill {
+    padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+    font-size: 12px; cursor: pointer; background: none; color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+  .type-pill.selected { background: var(--accent); border-color: var(--accent); color: var(--card); }
+  .row-2 { display: flex; gap: 12px; }
+  .row-2 > div { flex: 1; }
+  .shelf-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .shelf-check {
+    border: 1px solid var(--border); color: var(--muted); font-size: 12px;
+    padding: 5px 12px; border-radius: 14px; cursor: pointer; background: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .shelf-check.selected { border-color: var(--accent); color: var(--accent); background: rgba(193,105,79,0.08); }
+  .stars { margin-bottom: 16px; }
+  .star { font-size: 20px; cursor: pointer; color: var(--border); margin-right: 2px; }
+  .star.filled { color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn-primary {
+    flex: 1; padding: 11px; border-radius: 8px; border: none; background: var(--accent);
+    color: var(--card); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .btn-secondary {
+    padding: 11px 16px; border-radius: 8px; border: 1px solid var(--border); background: none;
+    color: var(--text); font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .error-msg { color: var(--accent); font-size: 12px; margin-top: -8px; margin-bottom: 12px; display: none; }
+  .error-msg.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">ShelfSpace</div>
+
+    <div class="nav-section" id="typesNav"></div>
+    <button class="add-shelf-btn" id="addTypeBtn">+ Add type</button>
+
+    <div class="divider"></div>
+
+    <div class="nav-section" id="listsNav"></div>
+    <button class="add-shelf-btn" id="addListBtn">+ Add shelf</button>
+
+    <div class="sidebar-footer">
+      <img id="footerAvatar" src="" alt="">
+      <span class="name" id="footerName"></span>
+      <button class="logout-icon" id="logoutBtn" title="Log out">&#9211;</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="mainTitle">All entries</div>
+        <div class="main-subtitle" id="mainSubtitle">0 entries</div>
+      </div>
+      <button class="add-entry-btn" id="openAddModal">+ Add entry</button>
+    </div>
+    <input class="search-bar" id="searchInput" placeholder="Search by title or author...">
+    <div class="grid" id="entryGrid"></div>
+    <div class="empty-state" id="emptyState" style="display:none">No entries here yet. Click "Add entry" to start your shelf.</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h2>Add a new entry</h2>
+    <p class="error-msg" id="formError"></p>
+
+    <span class="field-label">Type</span>
+    <div class="type-toggle" id="typeToggle"></div>
+
+    <span class="field-label">Title</span>
+    <input class="field-input" id="fieldTitle" placeholder="The Name of the Wind">
+
+    <span class="field-label">Author (optional)</span>
+    <input class="field-input" id="fieldAuthor" placeholder="Patrick Rothfuss">
+
+    <div class="row-2">
+      <div>
+        <span class="field-label">Genre</span>
+        <select class="field-select" id="fieldGenre"><option value="">None</option></select>
+      </div>
+      <div>
+        <span class="field-label">Status</span>
+        <select class="field-select" id="fieldStatus">
+          <option value="to_read">To-read</option>
+          <option value="currently_reading">Currently reading</option>
+          <option value="finished">Finished</option>
+        </select>
+      </div>
+    </div>
+
+    <span class="field-label">Tags (comma separated)</span>
+    <input class="field-input" id="fieldTags" placeholder="enemies-to-lovers, slow-burn">
+
+    <span class="field-label">Cover image URL (optional)</span>
+    <input class="field-input" id="fieldCover" placeholder="Paste an image link, or leave blank">
+
+    <span class="field-label">External link (optional)</span>
+    <input class="field-input" id="fieldUrl" placeholder="Link to article, recipe, fic, etc.">
+
+    <span class="field-label">Synopsis</span>
+    <textarea class="field-textarea" id="fieldSynopsis" placeholder="What's it about..."></textarea>
+
+    <span class="field-label">Your rating</span>
+    <div class="stars" id="starRating"></div>
+
+    <span class="field-label">Add to shelves</span>
+    <div class="shelf-checks" id="shelfChecks"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelAdd">Cancel</button>
+      <button class="btn-primary" id="submitAdd">Save to shelf</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('shelfspace_token');
+  const userStr = localStorage.getItem('shelfspace_user');
+  if (!token || !userStr) window.location.href = '/';
+  const user = JSON.parse(userStr);
+
+  const API = window.location.origin;
+  const authHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+  let types = [], genres = [], lists = [];
+  let activeFilter = { kind: 'all' };
+  let selectedTypeId = null;
+  let selectedRating = 0;
+  let selectedShelfIds = new Set();
+
+  document.getElementById('footerAvatar').src = user.profile_picture || '';
+  document.getElementById('footerName').textContent = user.name || user.email;
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('shelfspace_token');
+    localStorage.removeItem('shelfspace_user');
+    window.location.href = '/';
+  });
+
+  async function api(path, options = {}) {
+    const res = await fetch(API + path, { ...options, headers: authHeaders });
+    if (res.status === 401) { window.location.href = '/'; return; }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  async function loadSidebar() {
+    types = await api('/api/types');
+    lists = await api('/api/lists');
+    genres = await api('/api/genres');
+    renderSidebar();
+    renderTypeToggle();
+    renderGenreSelect();
+    renderShelfChecks();
+  }
+
+  function renderSidebar() {
+    const typesNav = document.getElementById('typesNav');
+    typesNav.innerHTML = '';
+    const allItem = document.createElement('div');
+    allItem.className = 'nav-item' + (activeFilter.kind === 'all' ? ' active' : '');
+    allItem.textContent = 'All entries';
+    allItem.onclick = () => { activeFilter = { kind: 'all' }; refresh(); };
+    typesNav.appendChild(allItem);
+    types.forEach(t => {
+      const item = document.createElement('div');
+      item.className = 'nav-item' + (activeFilter.kind === 'type' && activeFilter.id === t.id ? ' active' : '');
+      item.textContent = t.name;
+      item.onclick = () => { activeFilter = { kind: 'type', id: t.id, name: t.name }; refresh(); };
+      typesNav.appendChild(item);
+    });
+
+    const listsNav = document.getElementById('listsNav');
+    listsNav.innerHTML = '';
+    lists.forEach(l => {
+      const item = document.createElement('div');
+      item.className = 'nav-item' + (activeFilter.kind === 'list' && activeFilter.id === l.id ? ' active' : '');
+      item.textContent = (l.is_private ? '\uD83D\uDD12 ' : '') + l.name;
+      item.onclick = () => { activeFilter = { kind: 'list', id: l.id, name: l.name }; refresh(); };
+      listsNav.appendChild(item);
+    });
+  }
+
+  document.getElementById('addTypeBtn').onclick = async () => {
+    const name = prompt('Name your new type (e.g. Podcast, Manga):');
+    if (!name) return;
+    await api('/api/types', { method: 'POST', body: JSON.stringify({ name }) });
+    await loadSidebar();
+  };
+  document.getElementById('addListBtn').onclick = async () => {
+    const name = prompt('Name your new shelf (e.g. Recipes, Book Club):');
+    if (!name) return;
+    const isPrivate = confirm('Make this shelf private? Click OK for yes, Cancel for no.');
+    await api('/api/lists', { method: 'POST', body: JSON.stringify({ name, is_private: isPrivate }) });
+    await loadSidebar();
+  };
+
+  async function refresh() {
+    renderSidebar();
+    const params = new URLSearchParams();
+    if (activeFilter.kind === 'type') params.set('type_id', activeFilter.id);
+    if (activeFilter.kind === 'list') params.set('list_id', activeFilter.id);
+    const search = document.getElementById('searchInput').value.trim();
+    if (search) params.set('search', search);
+
+    document.getElementById('mainTitle').textContent =
+      activeFilter.kind === 'all' ? 'All entries' : activeFilter.name;
+
+    const entries = await api('/api/entries?' + params.toString());
+    document.getElementById('mainSubtitle').textContent = entries.length + (entries.length === 1 ? ' entry' : ' entries');
+
+    const grid = document.getElementById('entryGrid');
+    const empty = document.getElementById('emptyState');
+    grid.innerHTML = '';
+    if (!entries.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    entries.forEach(e => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.onclick = () => { window.location.href = '/entry.html?id=' + e.id; };
+      const cover = document.createElement('div');
+      cover.className = 'card-cover';
+      if (e.cover_image_url) {
+        cover.style.backgroundImage = `url('${e.cover_image_url}')`;
+      } else {
+        cover.innerHTML = '<span class="placeholder-icon">&#128214;</span>';
+      }
+      const title = document.createElement('div');
+      title.className = 'card-title';
+      title.textContent = e.title;
+      const author = document.createElement('div');
+      author.className = 'card-author';
+      author.textContent = e.author || (e.tags[0] ? e.tags[0].name : '');
+      card.append(cover, title, author);
+      grid.appendChild(card);
+    });
+  }
+
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(window._searchDebounce);
+    window._searchDebounce = setTimeout(refresh, 300);
+  });
+
+  // --- Add Entry modal ---
+  function renderTypeToggle() {
+    const el = document.getElementById('typeToggle');
+    el.innerHTML = '';
+    types.forEach((t, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'type-pill' + (i === 0 ? ' selected' : '');
+      btn.textContent = t.name;
+      if (i === 0) selectedTypeId = t.id;
+      btn.onclick = () => {
+        selectedTypeId = t.id;
+        [...el.children].forEach(c => c.classList.remove('selected'));
+        btn.classList.add('selected');
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  function renderGenreSelect() {
+    const el = document.getElementById('fieldGenre');
+    el.innerHTML = '<option value="">None</option>';
+    genres.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name;
+      el.appendChild(opt);
+    });
+    const addOpt = document.createElement('option');
+    addOpt.value = '__add__';
+    addOpt.textContent = '+ Add new genre';
+    el.appendChild(addOpt);
+  }
+  document.getElementById('fieldGenre').addEventListener('change', async (e) => {
+    if (e.target.value === '__add__') {
+      const name = prompt('New genre name:');
+      e.target.value = '';
+      if (!name) return;
+      const g = await api('/api/genres', { method: 'POST', body: JSON.stringify({ name }) });
+      genres.push(g);
+      renderGenreSelect();
+      document.getElementById('fieldGenre').value = g.id;
+    }
+  });
+
+  function renderShelfChecks() {
+    const el = document.getElementById('shelfChecks');
+    el.innerHTML = '';
+    selectedShelfIds.clear();
+    lists.forEach(l => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'shelf-check';
+      btn.textContent = l.name;
+      btn.onclick = () => {
+        if (selectedShelfIds.has(l.id)) { selectedShelfIds.delete(l.id); btn.classList.remove('selected'); }
+        else { selectedShelfIds.add(l.id); btn.classList.add('selected'); }
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  function renderStars() {
+    const el = document.getElementById('starRating');
+    el.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const s = document.createElement('span');
+      s.className = 'star' + (i <= selectedRating ? ' filled' : '');
+      s.innerHTML = '&#9733;';
+      s.onclick = () => { selectedRating = (selectedRating === i) ? 0 : i; renderStars(); };
+      el.appendChild(s);
+    }
+  }
+  renderStars();
+
+  function openModal() {
+    document.getElementById('addModal').classList.add('active');
+    document.getElementById('formError').classList.remove('active');
+  }
+  function closeModal() {
+    document.getElementById('addModal').classList.remove('active');
+    document.getElementById('fieldTitle').value = '';
+    document.getElementById('fieldAuthor').value = '';
+    document.getElementById('fieldGenre').value = '';
+    document.getElementById('fieldStatus').value = 'to_read';
+    document.getElementById('fieldTags').value = '';
+    document.getElementById('fieldCover').value = '';
+    document.getElementById('fieldUrl').value = '';
+    document.getElementById('fieldSynopsis').value = '';
+    selectedRating = 0;
+    renderStars();
+    renderShelfChecks();
+  }
+
+  document.getElementById('openAddModal').onclick = openModal;
+  document.getElementById('cancelAdd').onclick = closeModal;
+
+  document.getElementById('submitAdd').onclick = async () => {
+    const title = document.getElementById('fieldTitle').value.trim();
+    const errorEl = document.getElementById('formError');
+    if (!title || !selectedTypeId) {
+      errorEl.textContent = 'Title and type are required.';
+      errorEl.classList.add('active');
+      return;
+    }
+    const genreVal = document.getElementById('fieldGenre').value;
+    const tagsRaw = document.getElementById('fieldTags').value.trim();
+
+    const payload = {
+      type_id: selectedTypeId,
+      title,
+      author: document.getElementById('fieldAuthor').value.trim() || null,
+      genre_id: genreVal && genreVal !== '__add__' ? genreVal : null,
+      synopsis: document.getElementById('fieldSynopsis').value.trim() || null,
+      cover_image_url: document.getElementById('fieldCover').value.trim() || null,
+      url: document.getElementById('fieldUrl').value.trim() || null,
+      rating: selectedRating || null,
+      status: document.getElementById('fieldStatus').value,
+      tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
+      list_ids: [...selectedShelfIds],
+    };
+
+    const result = await api('/api/entries', { method: 'POST', body: JSON.stringify(payload) });
+    if (!result || result.error) {
+      errorEl.textContent = (result && result.error) || 'Something went wrong. Please try again.';
+      errorEl.classList.add('active');
+      return;
+    }
+    closeModal();
+    await refresh();
+  };
+
+  // Init
+  loadSidebar().then(refresh);
+</script>
+
+</body>
+</html>

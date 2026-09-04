@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShelfSpace &#8212; Sign in</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5EFE6;
+    --card: #FFFDF9;
+    --text: #3A2E27;
+    --muted: #8A7E70;
+    --accent: #C1694F;
+    --border: #D9CFC0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 48px 40px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(58, 46, 39, 0.08);
+  }
+
+  .logo {
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    color: var(--card);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0 0 8px;
+  }
+
+  p.tagline {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 32px;
+    line-height: 1.5;
+  }
+
+  #google-btn-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .fine-print {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 20px;
+    line-height: 1.5;
+  }
+
+  .error-msg {
+    color: var(--accent);
+    font-size: 13px;
+    margin-top: 14px;
+    display: none;
+  }
+  .error-msg.active { display: block; }
+
+  .loading-msg {
+    color: var(--muted);
+    font-size: 13px;
+    display: none;
+  }
+  .loading-msg.active { display: block; }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="logo">S</div>
+    <h1>ShelfSpace</h1>
+    <p class="tagline">Your personal library for books, fanfic,<br>and everything you've read.</p>
+
+    <div id="google-btn-container"></div>
+    <p class="loading-msg" id="loadingMsg">Signing you in...</p>
+
+    <p class="fine-print">Sign in with Google to access your private shelf.<br>Only approved accounts can sign in during testing.</p>
+    <p class="error-msg" id="errorMsg"></p>
+  </div>
+
+<script>
+  // Public OAuth Client ID - safe to expose in frontend code, this is not a secret.
+  const GOOGLE_CLIENT_ID = "408890008971-8ji9dbsl7vp3bio850esf92mbvp90t4i.apps.googleusercontent.com";
+  const API_BASE = window.location.origin; // same origin, since Express serves this file too
+
+  function showError(message) {
+    document.getElementById('loadingMsg').classList.remove('active');
+    const el = document.getElementById('errorMsg');
+    el.textContent = message;
+    el.classList.add('active');
+  }
+
+  async function handleCredentialResponse(response) {
+    document.getElementById('google-btn-container').style.display = 'none';
+    document.getElementById('loadingMsg').classList.add('active');
+    try {
+      const res = await fetch(API_BASE + '/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Sign-in failed. Please try again.');
+        document.getElementById('google-btn-container').style.display = 'flex';
+        return;
+      }
+
+      localStorage.setItem('shelfspace_token', data.token);
+      localStorage.setItem('shelfspace_user', JSON.stringify(data.user));
+      window.location.href = '/dashboard.html';
+    } catch (err) {
+      showError('Could not reach the server. Is the backend running?');
+      document.getElementById('google-btn-container').style.display = 'flex';
+    }
+  }
+
+  // On page load: if we already have a saved session, skip straight to the dashboard.
+  window.addEventListener('load', () => {
+    const savedUser = localStorage.getItem('shelfspace_user');
+    const savedToken = localStorage.getItem('shelfspace_token');
+    if (savedUser && savedToken) {
+      window.location.href = '/dashboard.html';
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('google-btn-container'),
+      { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: 260 }
+    );
+  });
+</script>
+
+</body>
+</html>
