@@ -314,17 +314,6 @@
     });
   }
 
-    const listsNav = document.getElementById('listsNav');
-    listsNav.innerHTML = '';
-    lists.forEach(l => {
-      const item = document.createElement('div');
-      item.className = 'nav-item' + (activeFilter.kind === 'list' && activeFilter.id === l.id ? ' active' : '');
-      item.textContent = (l.is_private ? '\uD83D\uDD12 ' : '') + l.name;
-      item.onclick = () => { activeFilter = { kind: 'list', id: l.id, name: l.name }; refresh(); };
-      listsNav.appendChild(item);
-    });
-  }
-
   document.getElementById('addTypeBtn').onclick = async () => {
     const name = prompt('Name your new type (e.g. Podcast, Manga):');
     if (!name) return;
