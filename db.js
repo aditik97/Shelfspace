@@ -14,7 +14,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined, // Aiven requires SSL
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined, // Aiven requires SSL; rejectUnauthorized:false trusts the connection without pinning their private CA
 });
 
 module.exports = pool;
