@@ -35,6 +35,8 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE /api/lists/:id
+// Deleting a shelf does NOT delete its entries - it just un-assigns them from this shelf
+// (entry_lists has ON DELETE CASCADE on list_id, so those link rows are cleaned up automatically).
 router.delete('/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM lists WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);

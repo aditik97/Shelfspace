@@ -41,6 +41,12 @@
   .nav-item:hover { background: rgba(0,0,0,0.04); }
   .nav-item.active { background: var(--accent); color: var(--card); }
   .nav-item .count { font-size: 11px; opacity: 0.7; }
+    .nav-item span:first-child { flex: 1; }
+  .nav-delete {
+    opacity: 0; font-size: 15px; padding: 0 4px; border-radius: 4px; margin-left: 6px; line-height: 1;
+  }
+  .nav-item:hover .nav-delete { opacity: 0.6; }
+  .nav-delete:hover { opacity: 1 !important; background: rgba(0,0,0,0.1); }
   .add-shelf-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 8px 10px; border-radius: 8px; font-size: 12px;
@@ -270,16 +276,43 @@
     typesNav.innerHTML = '';
     const allItem = document.createElement('div');
     allItem.className = 'nav-item' + (activeFilter.kind === 'all' ? ' active' : '');
-    allItem.textContent = 'All entries';
+    allItem.innerHTML = '<span>All entries</span>';
     allItem.onclick = () => { activeFilter = { kind: 'all' }; refresh(); };
     typesNav.appendChild(allItem);
     types.forEach(t => {
       const item = document.createElement('div');
       item.className = 'nav-item' + (activeFilter.kind === 'type' && activeFilter.id === t.id ? ' active' : '');
-      item.textContent = t.name;
-      item.onclick = () => { activeFilter = { kind: 'type', id: t.id, name: t.name }; refresh(); };
+      item.innerHTML = `<span>${t.name}</span><span class="nav-delete" title="Delete type">&times;</span>`;
+      item.querySelector('span:first-child').onclick = () => { activeFilter = { kind: 'type', id: t.id, name: t.name }; refresh(); };
+      item.querySelector('.nav-delete').onclick = async (ev) => {
+        ev.stopPropagation();
+        if (!confirm(`Delete type "${t.name}"?`)) return;
+        const result = await api('/api/types/' + t.id, { method: 'DELETE' });
+        if (result && result.error) { alert(result.error); return; }
+        if (activeFilter.kind === 'type' && activeFilter.id === t.id) activeFilter = { kind: 'all' };
+        await loadSidebar(); refresh();
+      };
       typesNav.appendChild(item);
     });
+
+    const listsNav = document.getElementById('listsNav');
+    listsNav.innerHTML = '';
+    lists.forEach(l => {
+      const item = document.createElement('div');
+      item.className = 'nav-item' + (activeFilter.kind === 'list' && activeFilter.id === l.id ? ' active' : '');
+      item.innerHTML = `<span>${(l.is_private ? '\uD83D\uDD12 ' : '') + l.name}</span><span class="nav-delete" title="Delete shelf">&times;</span>`;
+      item.querySelector('span:first-child').onclick = () => { activeFilter = { kind: 'list', id: l.id, name: l.name }; refresh(); };
+      item.querySelector('.nav-delete').onclick = async (ev) => {
+        ev.stopPropagation();
+        if (!confirm(`Delete shelf "${l.name}"? Entries on it won't be deleted, just removed from this shelf.`)) return;
+        const result = await api('/api/lists/' + l.id, { method: 'DELETE' });
+        if (result && result.error) { alert(result.error); return; }
+        if (activeFilter.kind === 'list' && activeFilter.id === l.id) activeFilter = { kind: 'all' };
+        await loadSidebar(); refresh();
+      };
+      listsNav.appendChild(item);
+    });
+  }
 
     const listsNav = document.getElementById('listsNav');
     listsNav.innerHTML = '';

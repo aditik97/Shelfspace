@@ -37,6 +37,10 @@ router.delete('/:id', async (req, res) => {
     await pool.query('DELETE FROM types WHERE id = ? AND user_id = ?', [req.params.id, req.userId]);
     res.status(204).send();
   } catch (err) {
+    // A type can't be deleted while entries still use it (type_id is required on entries).
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      return res.status(400).json({ error: 'This type is still used by one or more entries. Change or delete those entries first.' });
+    }
     res.status(500).json({ error: err.message });
   }
 });
