@@ -171,7 +171,16 @@
       </div>
       <button class="add-entry-btn" id="openAddModal">+ Add entry</button>
     </div>
-    <input class="search-bar" id="searchInput" placeholder="Search by title or author...">
+    <div style="display:flex; gap:10px; margin-bottom:20px;">
+      <input class="search-bar" id="searchInput" placeholder="Search by title or author..." style="margin-bottom:0; flex:1;">
+      <select class="field-select" id="genreFilter" style="margin-bottom:0; width:160px;"><option value="">All genres</option></select>
+     <select class="field-select" id="statusFilter" style="margin-bottom:0; width:170px;">
+       <option value="">All statuses</option>
+      <option value="to_read">To-read</option>
+      <option value="currently_reading">Currently reading</option>
+      <option value="finished">Finished</option>
+  </select>
+</div>
     <div class="grid" id="entryGrid"></div>
     <div class="empty-state" id="emptyState" style="display:none">No entries here yet. Click "Add entry" to start your shelf.</div>
   </div>
@@ -269,6 +278,14 @@
     renderTypeToggle();
     renderGenreSelect();
     renderShelfChecks();
+    const gf = document.getElementById('genreFilter');
+    gf.innerHTML = '<option value="">All genres</option>';
+    genres.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name;
+      gf.appendChild(opt);
+    });
   }
 
   function renderSidebar() {
@@ -335,6 +352,10 @@
     if (activeFilter.kind === 'list') params.set('list_id', activeFilter.id);
     const search = document.getElementById('searchInput').value.trim();
     if (search) params.set('search', search);
+    const genreVal = document.getElementById('genreFilter').value;
+    if (genreVal) params.set('genre_id', genreVal);
+    const statusVal = document.getElementById('statusFilter').value;
+    if (statusVal) params.set('status', statusVal);
 
     document.getElementById('mainTitle').textContent =
       activeFilter.kind === 'all' ? 'All entries' : activeFilter.name;
@@ -374,7 +395,8 @@
     clearTimeout(window._searchDebounce);
     window._searchDebounce = setTimeout(refresh, 300);
   });
-
+  document.getElementById('genreFilter').addEventListener('change', refresh);
+  document.getElementById('statusFilter').addEventListener('change', refresh);
   // --- Add Entry modal ---
   function renderTypeToggle() {
     const el = document.getElementById('typeToggle');
