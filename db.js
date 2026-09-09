@@ -11,16 +11,28 @@ function env(name) {
   return v == null ? '' : String(v).trim();
 }
 
-// Prefer Railway plugin vars (MYSQL*) over copied local DB_* so a leftover
-// localhost/Aiven host does not win on production.
-const connectionUrl = env('DATABASE_URL') || env('MYSQL_URL');
+function poolConfigFromUrl(raw) {
+  const u = new URL(raw);
+  const host = decodeURIComponent(u.hostname);
+  return {
+    host,
+    port: Number(u.port || 3306),
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: decodeURIComponent(u.pathname.replace(/^\//, '').split('?')[0] || 'railway'),
+    waitForConnections: true,
+    connectionLimit: 10,
+    enableKeepAlive: true,
+    // Railway private DNS is IPv6; Node's dual-stack lookup often becomes AggregateError.
+    family: host.endsWith('.railway.internal') ? 6 : 0,
+  };
+}
+
+// Prefer a URL. Public URL is IPv4 and more reliable from Node; internal is fine with family 6.
+const connectionUrl = env('MYSQL_PUBLIC_URL') || env('DATABASE_URL') || env('MYSQL_URL');
 
 const pool = connectionUrl
-  ? mysql.createPool({
-      uri: connectionUrl,
-      waitForConnections: true,
-      connectionLimit: 10,
-    })
+  ? mysql.createPool(poolConfigFromUrl(connectionUrl))
   : mysql.createPool({
       host: env('MYSQLHOST') || env('DB_HOST') || 'localhost',
       port: Number(env('MYSQLPORT') || env('DB_PORT') || 3306),
@@ -29,6 +41,8 @@ const pool = connectionUrl
       database: env('MYSQLDATABASE') || env('DB_NAME'),
       waitForConnections: true,
       connectionLimit: 10,
+      enableKeepAlive: true,
+      family: (env('MYSQLHOST') || env('DB_HOST')).endsWith('.railway.internal') ? 6 : 0,
       ssl: env('DB_SSL') === 'true' ? { rejectUnauthorized: false } : undefined,
     });
 

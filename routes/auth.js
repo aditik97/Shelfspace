@@ -83,7 +83,8 @@ router.post('/google', async (req, res) => {
       user: { id: user.id, email: user.email, name: user.name, profile_picture: user.profile_picture },
     });
   } catch (err) {
-    const detail = err.sqlMessage || err.message || String(err);
+    const nested = Array.isArray(err.errors) ? err.errors.map(e => e.code || e.message).filter(Boolean).join('; ') : '';
+    const detail = nested || err.sqlMessage || err.message || String(err);
     console.error('Google auth failed:', detail);
     res.status(401).json({ error: 'Google authentication failed: ' + detail });
   }
