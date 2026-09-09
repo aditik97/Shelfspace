@@ -30,7 +30,7 @@ This project is set up for [Railway](https://railway.app). One web service + one
    - `GOOGLE_BOOKS_API_KEY` — optional, improves Discover
    Railway injects `MYSQL_URL` when the database is linked. You do **not** need to copy passwords by hand if the plugin is linked to the service.
 5. Set the service **Root Directory** to this folder if the GitHub repo is a parent of `backend`. If this `package.json` is at the repo root, leave Root Directory empty.
-6. After the first deploy, open a Railway MySQL shell (or any MySQL client with `MYSQL_URL`) and run the `CREATE TABLE` statements from `sql/schema_v2.sql` — **skip** the `DROP DATABASE` / `CREATE DATABASE` / `USE` lines. Use the database Railway already created.
+6. After the first deploy, open a Railway MySQL query window and run `sql/schema_railway.sql`. Do **not** run `schema_v2.sql` on Railway — that file drops the whole database.
 7. Copy the public URL (e.g. `https://shelfspace-production.up.railway.app`) into Google OAuth:
    - **Authorized JavaScript origins**: `https://your-app.up.railway.app`
    - **Authorized redirect URIs**: same origin if Google asks for it
