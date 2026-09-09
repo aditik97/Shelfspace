@@ -28,7 +28,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 // Public, non-secret config the frontend needs before login (the Google OAuth
 // Client ID is meant to be public - it identifies the app, not a credential).
 app.get('/api/config', (req, res) => {
-  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || '' });
+  res.json({ googleClientId: (process.env.GOOGLE_CLIENT_ID || '').trim() });
 });
 
 // Auth routes are NOT behind requireAuth (you need to be able to log in

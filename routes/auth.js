@@ -11,7 +11,8 @@ const { OAuth2Client } = require('google-auth-library');
 const pool = require('../db');
 const requireAuth = require('../middleware/auth');
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+const googleClient = new OAuth2Client(googleClientId);
 
 const DEFAULT_TYPES = ['Book', 'Fanfic', 'Article', 'Blog'];
 const DEFAULT_GENRES = ['Fantasy', 'Romance', 'Mystery', 'Sci-Fi', 'Horror', 'Drama', 'Slice of Life', 'Non-Fiction', 'Adventure', 'Historical'];
@@ -46,7 +47,7 @@ router.post('/google', async (req, res) => {
     // Ask Google to confirm this token is real and read who it belongs to
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: googleClientId,
     });
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
@@ -73,14 +74,18 @@ router.post('/google', async (req, res) => {
 
     // Issue our own session token (separate from Google's) so we don't
     // need to re-verify with Google on every single request afterward.
-    const sessionToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const jwtSecret = (process.env.JWT_SECRET || '').trim();
+    if (!jwtSecret) throw new Error('JWT_SECRET is not set on the server');
+    const sessionToken = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '30d' });
 
     res.json({
       token: sessionToken,
       user: { id: user.id, email: user.email, name: user.name, profile_picture: user.profile_picture },
     });
   } catch (err) {
-    res.status(401).json({ error: 'Google authentication failed: ' + err.message });
+    const detail = err.sqlMessage || err.message || String(err);
+    console.error('Google auth failed:', detail);
+    res.status(401).json({ error: 'Google authentication failed: ' + detail });
   }
 });
 
