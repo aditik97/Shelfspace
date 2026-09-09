@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShelfSpace &#8212; Entry</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F5EFE6;
+    --card: #FFFDF9;
+    --text: #3A2E27;
+    --muted: #8A7E70;
+    --accent: #C1694F;
+    --border: #D9CFC0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text); background: var(--bg); }
+
+  .topbar { padding: 18px 32px; }
+  .back-link { color: var(--muted); font-size: 13px; text-decoration: none; cursor: pointer; }
+  .back-link:hover { color: var(--accent); }
+
+  .detail-wrap {
+    max-width: 900px; margin: 0 auto; padding: 10px 32px 60px;
+    display: flex; gap: 36px;
+  }
+  .cover-col { flex-shrink: 0; width: 240px; }
+  .cover-box {
+    width: 240px; aspect-ratio: 2/3; background: var(--border); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    background-size: cover; background-position: center; margin-bottom: 16px;
+  }
+  .cover-box .placeholder-icon { font-size: 44px; color: var(--accent); }
+  .action-btns { display: flex; flex-direction: column; gap: 8px; }
+  .btn { padding: 10px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; border: 1px solid var(--border); background: var(--card); color: var(--text); }
+  .btn:hover { background: var(--bg); }
+  .btn-danger { color: var(--accent); border-color: var(--accent); }
+
+  .info-col { flex: 1; }
+  .title { font-family: 'Playfair Display', serif; font-size: 30px; margin: 0 0 4px; }
+  .author { color: var(--muted); font-size: 15px; margin-bottom: 14px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); color: var(--muted); }
+  .badge.type { background: var(--accent); color: var(--card); border: none; }
+  .stars-display { margin-bottom: 16px; font-size: 18px; color: var(--border); }
+  .stars-display .filled { color: var(--accent); }
+  .synopsis { font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+  .meta-row { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+  .meta-item { font-size: 12px; }
+  .meta-item .label { color: var(--muted); display: block; margin-bottom: 2px; }
+  .ext-link { color: var(--accent); font-size: 13px; word-break: break-all; }
+  .shelves-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .shelf-pill { font-size: 11px; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--accent); color: var(--accent); }
+
+  .loading, .not-found { text-align: center; padding: 80px; color: var(--muted); }
+
+  /* Edit modal - reuses same structure as Add Entry modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(58,46,39,0.35); align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--bg); border-radius: 16px; padding: 26px; max-width: 480px; width: 100%; max-height: 88vh; overflow-y: auto; }
+  .modal h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 20px; margin: 0 0 18px; }
+  .field-label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .field-input, .field-select, .field-textarea { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 13px; margin-bottom: 14px; font-family: 'Inter', sans-serif; box-sizing: border-box; }
+  .field-textarea { resize: vertical; min-height: 60px; }
+  .row-2 { display: flex; gap: 12px; }
+  .row-2 > div { flex: 1; }
+  .shelf-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .shelf-check { border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 14px; cursor: pointer; background: none; font-family: 'Inter', sans-serif; }
+  .shelf-check.selected { border-color: var(--accent); color: var(--accent); background: rgba(193,105,79,0.08); }
+  .stars-input { margin-bottom: 16px; }
+  .star { font-size: 20px; cursor: pointer; color: var(--border); margin-right: 2px; }
+  .star.filled { color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn-primary { flex: 1; padding: 11px; border-radius: 8px; border: none; background: var(--accent); color: var(--card); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .btn-secondary { padding: 11px 16px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text); font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .error-msg { color: var(--accent); font-size: 12px; margin-top: -8px; margin-bottom: 12px; display: none; }
+  .error-msg.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="topbar"><a class="back-link" href="/dashboard.html">&larr; Back to shelf</a></div>
+
+<div id="content" class="detail-wrap"><div class="loading">Loading...</div></div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>Edit entry</h2>
+    <p class="error-msg" id="formError"></p>
+
+    <span class="field-label">Title</span>
+    <input class="field-input" id="fieldTitle">
+
+    <span class="field-label">Author (optional)</span>
+    <input class="field-input" id="fieldAuthor">
+
+    <div class="row-2">
+      <div>
+        <span class="field-label">Genre</span>
+        <select class="field-select" id="fieldGenre"><option value="">None</option></select>
+      </div>
+      <div>
+        <span class="field-label">Status</span>
+        <select class="field-select" id="fieldStatus">
+          <option value="to_read">To-read</option>
+          <option value="currently_reading">Currently reading</option>
+          <option value="finished">Finished</option>
+        </select>
+      </div>
+    </div>
+
+    <span class="field-label">Cover image URL (optional)</span>
+    <input class="field-input" id="fieldCover">
+
+    <span class="field-label">External link (optional)</span>
+    <input class="field-input" id="fieldUrl">
+
+    <span class="field-label">Synopsis</span>
+    <textarea class="field-textarea" id="fieldSynopsis"></textarea>
+
+    <span class="field-label">Your rating</span>
+    <div class="stars-input" id="starRating"></div>
+
+    <span class="field-label">Shelves</span>
+    <div class="shelf-checks" id="shelfChecks"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelEdit">Cancel</button>
+      <button class="btn-primary" id="submitEdit">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('shelfspace_token');
+  if (!token) window.location.href = '/';
+  const API = window.location.origin;
+  const authHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+  const params = new URLSearchParams(window.location.search);
+  const entryId = params.get('id');
+  if (!entryId) window.location.href = '/dashboard.html';
+
+  let entry = null, lists = [], genres = [];
+  let selectedRating = 0;
+  let selectedShelfIds = new Set();
+
+  async function api(path, options = {}) {
+    const res = await fetch(API + path, { ...options, headers: authHeaders });
+    if (res.status === 401) { window.location.href = '/'; return; }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  const STATUS_LABELS = { to_read: 'To-read', currently_reading: 'Currently reading', finished: 'Finished' };
+
+  function renderDetail() {
+    const el = document.getElementById('content');
+    const stars = [1,2,3,4,5].map(i => `<span class="${i <= (entry.rating||0) ? 'filled' : ''}">&#9733;</span>`).join('');
+    el.innerHTML = `
+      <div class="cover-col">
+        <div class="cover-box" ${entry.cover_image_url ? `style="background-image:url('${entry.cover_image_url}')"` : ''}>
+          ${entry.cover_image_url ? '' : '<span class="placeholder-icon">&#128214;</span>'}
+        </div>
+        <div class="action-btns">
+          <button class="btn" id="editBtn">Edit entry</button>
+          <button class="btn btn-danger" id="deleteBtn">Delete entry</button>
+        </div>
+      </div>
+      <div class="info-col">
+        <div class="title">${escapeHtml(entry.title)}</div>
+        ${entry.author ? `<div class="author">${escapeHtml(entry.author)}</div>` : ''}
+        <div class="badges">
+          <span class="badge type">${entry.type_name || 'Entry'}</span>
+          ${entry.genre_id && genreName(entry.genre_id) ? `<span class="badge">${genreName(entry.genre_id)}</span>` : ''}
+          ${entry.tags.map(t => `<span class="badge">${escapeHtml(t.name)}</span>`).join('')}
+        </div>
+        <div class="stars-display">${stars}</div>
+        ${entry.synopsis ? `<div class="synopsis">${escapeHtml(entry.synopsis)}</div>` : ''}
+        <div class="meta-row">
+          <div class="meta-item"><span class="label">Status</span>${STATUS_LABELS[entry.status] || entry.status}</div>
+          ${entry.date_finished ? `<div class="meta-item"><span class="label">Finished</span>${entry.date_finished}</div>` : ''}
+          ${entry.url ? `<div class="meta-item"><span class="label">Link</span><a class="ext-link" href="${entry.url}" target="_blank">${entry.url}</a></div>` : ''}
+        </div>
+        ${entry.lists.length ? `<div class="meta-item"><span class="label">On shelves</span><div class="shelves-list">${entry.lists.map(l => `<span class="shelf-pill">${escapeHtml(l.name)}</span>`).join('')}</div></div>` : ''}
+      </div>
+    `;
+    document.getElementById('editBtn').onclick = openEditModal;
+    document.getElementById('deleteBtn').onclick = deleteEntry;
+  }
+
+  function genreName(id) {
+    const g = genres.find(g => g.id === id || g.id === Number(id));
+    return g ? g.name : null;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function deleteEntry() {
+    if (!confirm(`Delete "${entry.title}"? This can't be undone.`)) return;
+    await api('/api/entries/' + entryId, { method: 'DELETE' });
+    window.location.href = '/dashboard.html';
+  }
+
+  function renderGenreSelect() {
+    const el = document.getElementById('fieldGenre');
+    el.innerHTML = '<option value="">None</option>';
+    genres.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name;
+      el.appendChild(opt);
+    });
+  }
+
+  function renderShelfChecks() {
+    const el = document.getElementById('shelfChecks');
+    el.innerHTML = '';
+    lists.forEach(l => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'shelf-check' + (selectedShelfIds.has(l.id) ? ' selected' : '');
+      btn.textContent = l.name;
+      btn.onclick = () => {
+        if (selectedShelfIds.has(l.id)) { selectedShelfIds.delete(l.id); btn.classList.remove('selected'); }
+        else { selectedShelfIds.add(l.id); btn.classList.add('selected'); }
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  function renderStars() {
+    const el = document.getElementById('starRating');
+    el.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const s = document.createElement('span');
+      s.className = 'star' + (i <= selectedRating ? ' filled' : '');
+      s.innerHTML = '&#9733;';
+      s.onclick = () => { selectedRating = (selectedRating === i) ? 0 : i; renderStars(); };
+      el.appendChild(s);
+    }
+  }
+
+  function openEditModal() {
+    document.getElementById('fieldTitle').value = entry.title || '';
+    document.getElementById('fieldAuthor').value = entry.author || '';
+    document.getElementById('fieldGenre').value = entry.genre_id || '';
+    document.getElementById('fieldStatus').value = entry.status || 'to_read';
+    document.getElementById('fieldCover').value = entry.cover_image_url || '';
+    document.getElementById('fieldUrl').value = entry.url || '';
+    document.getElementById('fieldSynopsis').value = entry.synopsis || '';
+    selectedRating = entry.rating || 0;
+    selectedShelfIds = new Set(entry.lists.map(l => l.id));
+    renderStars();
+    renderShelfChecks();
+    document.getElementById('formError').classList.remove('active');
+    document.getElementById('editModal').classList.add('active');
+  }
+  function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
+  document.getElementById('cancelEdit').onclick = closeEditModal;
+
+  document.getElementById('submitEdit').onclick = async () => {
+    const title = document.getElementById('fieldTitle').value.trim();
+    const errorEl = document.getElementById('formError');
+    if (!title) { errorEl.textContent = 'Title is required.'; errorEl.classList.add('active'); return; }
+
+    const payload = {
+      title,
+      author: document.getElementById('fieldAuthor').value.trim() || null,
+      genre_id: document.getElementById('fieldGenre').value || null,
+      synopsis: document.getElementById('fieldSynopsis').value.trim() || null,
+      cover_image_url: document.getElementById('fieldCover').value.trim() || null,
+      url: document.getElementById('fieldUrl').value.trim() || null,
+      rating: selectedRating || null,
+      status: document.getElementById('fieldStatus').value,
+    };
+
+    const result = await api('/api/entries/' + entryId, { method: 'PUT', body: JSON.stringify(payload) });
+    if (!result || result.error) {
+      errorEl.textContent = (result && result.error) || 'Something went wrong.';
+      errorEl.classList.add('active');
+      return;
+    }
+    await api('/api/entries/' + entryId + '/lists', { method: 'PUT', body: JSON.stringify({ list_ids: [...selectedShelfIds] }) });
+    closeEditModal();
+    await loadEntry();
+  };
+
+  async function loadEntry() {
+    entry = await api('/api/entries/' + entryId);
+    if (!entry || entry.error) {
+      document.getElementById('content').innerHTML = '<div class="not-found">Entry not found.</div>';
+      return;
+    }
+    renderDetail();
+  }
+
+  async function init() {
+    lists = await api('/api/lists');
+    genres = await api('/api/genres');
+    renderGenreSelect();
+    await loadEntry();
+  }
+  init();
+</script>
+
+</body>
+</html>
