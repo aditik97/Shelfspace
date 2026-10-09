@@ -10,6 +10,19 @@ const requireAuth = require('../middleware/auth');
 
 router.use(requireAuth);
 
+function todayISODate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function finishedDateFor(status, date_finished) {
+  if (status !== 'finished') return date_finished || null;
+  return date_finished || todayISODate();
+}
+
 // Helper: attach type name, tags, and lists to a single entry object
 async function attachTagsAndLists(entry, userId) {
   const [typeRows] = await pool.query('SELECT name FROM types WHERE id = ? AND user_id = ?', [entry.type_id, userId]);
@@ -102,7 +115,7 @@ router.post('/', async (req, res) => {
        external_id, external_source, isbn, publication_year, access_type, read_url, buy_url, progress_percent, current_page, total_pages, date_started)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [req.userId, type_id, title, author || null, genre_id || null, synopsis || null, cover_image_url || null,
-       url || null, rating || null, status || 'to_read', date_finished || null, external_id || null, external_source || null,
+       url || null, rating || null, status || 'to_read', finishedDateFor(status || 'to_read', date_finished), external_id || null, external_source || null,
        isbn || null, publication_year || null, access_type || null, read_url || null, buy_url || null,
        Math.min(100, Math.max(0, Number(progress_percent) || 0)), current_page || null, total_pages || null, date_started || null]
     );
@@ -151,7 +164,7 @@ router.put('/:id', async (req, res) => {
        rating=?, status=?, date_finished=?, external_id=?, external_source=?, isbn=?, publication_year=?, access_type=?, read_url=?, buy_url=?,
        progress_percent=?, current_page=?, total_pages=?, date_started=? WHERE id=? AND user_id=?`,
       [title, author || null, genre_id || null, synopsis || null, cover_image_url || null, url || null,
-       rating || null, status, date_finished || null, external_id || null, external_source || null, isbn || null, publication_year || null, access_type || null,
+       rating || null, status, finishedDateFor(status, date_finished), external_id || null, external_source || null, isbn || null, publication_year || null, access_type || null,
        read_url || null, buy_url || null, Math.min(100, Math.max(0, Number(progress_percent) || 0)), current_page || null, total_pages || null, date_started || null, req.params.id, req.userId]
     );
 

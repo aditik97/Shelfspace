@@ -60,6 +60,16 @@ router.get('/', async (req, res) => {
     }
 
     const thisYear = new Date().getFullYear();
+    const finishYear = (value) => {
+      if (!value) return thisYear;
+      if (typeof value === 'string') {
+        const n = parseInt(value.slice(0, 4), 10);
+        return Number.isFinite(n) ? n : thisYear;
+      }
+      const d = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(d.getTime())) return thisYear;
+      return d.getFullYear();
+    };
     const totals = { to_read: 0, currently_reading: 0, finished: 0 };
     let finishedThisYear = 0;
     let pagesReadThisYear = 0;
@@ -72,9 +82,9 @@ router.get('/', async (req, res) => {
       totals[e.status] = (totals[e.status] || 0) + 1;
       if (e.rating) { ratedCount += 1; ratingSum += e.rating; }
       if (e.genre_name) genreCounts.set(e.genre_name, (genreCounts.get(e.genre_name) || 0) + 1);
-      if (e.status === 'finished' && e.date_finished) {
-        finishDates.push(e.date_finished);
-        if (new Date(e.date_finished).getFullYear() === thisYear) {
+      if (e.status === 'finished') {
+        finishDates.push(e.date_finished || new Date());
+        if (finishYear(e.date_finished) === thisYear) {
           finishedThisYear += 1;
           if (e.total_pages) pagesReadThisYear += e.total_pages;
         }

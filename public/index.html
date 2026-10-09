@@ -448,6 +448,11 @@ function esc(v){
   return String(v == null ? '' : v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
 
+function localISODate(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function audibleSearchUrl(title, author){
   const q = [title, author].filter(Boolean).join(' ').trim();
   if(!q) return '';
@@ -1258,7 +1263,9 @@ async function saveEntryForm(){
     list_ids: [...formShelves],
     cover_image_url: formBookMeta.cover_image_url || carryOver.cover_image_url || null,
     url: formBookMeta.url || carryOver.url || null,
-    date_finished: carryOver.date_finished || null,
+    date_finished: document.getElementById('fStatus').value === 'finished'
+      ? (carryOver.date_finished || localISODate())
+      : carryOver.date_finished || null,
     external_id: formBookMeta.external_id || carryOver.external_id || null,
     external_source: formBookMeta.external_source || carryOver.external_source || null,
     isbn: formBookMeta.isbn || carryOver.isbn || null,
@@ -1359,12 +1366,12 @@ async function saveProgress(){
   const payload = {
     title: e.title, author: e.author, genre_id: e.genre_id, synopsis: e.synopsis,
     cover_image_url: e.cover_image_url, url: e.url, rating: e.rating, status,
-    date_finished: status === 'finished' ? new Date().toISOString().slice(0,10) : e.date_finished,
+    date_finished: status === 'finished' ? (e.date_finished || localISODate()) : e.date_finished,
     external_id: e.external_id, external_source: e.external_source, isbn: e.isbn,
     publication_year: e.publication_year, access_type: e.access_type,
     read_url: e.read_url, buy_url: e.buy_url,
     progress_percent: e.progress_percent || 0, current_page: e.current_page, total_pages: e.total_pages,
-    date_started: e.date_started || (status !== 'to_read' ? new Date().toISOString().slice(0,10) : null),
+    date_started: e.date_started || (status !== 'to_read' ? localISODate() : null),
   };
   const r = await api('/api/entries/' + e.id, { method:'PUT', body: JSON.stringify(payload) });
   closeModal('detailModal');
